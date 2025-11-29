@@ -22,5 +22,17 @@ Data engineering project: Scraping, analyzing, and visualizing Google Play Store
 - Preprocessing: Dedupe, normalize dates, handle NaNs.
 - Data: Columns - review (text), rating (1-5), date (YYYY-MM-DD), bank, source.
 
+### Scraping Results
+- Fetched all reviews + sliced to 450/bank → ~1200 total.
+- Fixed: No 'num' param in library; used DF.head().
+- Stats: Avg rating 3.9; Recent dates up to Nov 2025.
+- Challenges: Verified IDs; added sleeps to avoid throttling.
+
+- Task 1: `python src/preprocess.py` → Cleans to `data/processed/reviews_clean.csv` (~1100 rows, <5% missing).
+### Preprocessing Results
+- Input: 1350 raw → Output: 1330 clean (1.5% drop).
+- Fixed bug: Accurate row drop tracking for missing data.
+- Validation: <1% missing, balanced banks (~430 each), dates normalized to YYYY-MM-DD.
+
 ## License
 MIT (or as appropriate).
