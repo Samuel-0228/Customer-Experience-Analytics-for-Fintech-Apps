@@ -1,12 +1,9 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Date, ForeignKey, Enum as SQLEnum
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.dialects.postgresql import ENUM
-import os
-from datetime import date
+from sqlalchemy import create_engine, Column, Integer, String, Float, Date, ForeignKey
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
+from datetime import date  # Used in insert later
 
-# Connection (use env for prod; hardcoded for local)
-DB_URL = "postgresql://postgres:password@localhost:5432/bank_reviews"  # Update pw/port
+# Connection (MODIFY: Update password/port if needed)
+DB_URL = "postgresql://postgres:password@localhost:5432/bank_reviews"
 engine = create_engine(DB_URL)
 Base = declarative_base()
 Session = sessionmaker(bind=engine)
@@ -31,22 +28,23 @@ class Review(Base):
     review_text = Column(String(1000))  # Text
     rating = Column(Float, nullable=False)  # 1-5
     review_date = Column(Date, nullable=False)
-    sentiment_label = Column(SQLEnum(
-        'positive', 'negative', 'neutral', name='sentiment_enum'), default='neutral')
+    # String for simplicity
+    sentiment_label = Column(String(20), default='neutral')
     sentiment_score = Column(Float)  # -1 to 1
     source = Column(String(50), default='Google Play')
+    theme = Column(String(50), default='Other')  # From Task 2
 
     # Relationship
     bank = relationship("Bank", back_populates="reviews")
 
-# Create tables
+# Create tables (idempotent)
 
 
 def create_tables():
     Base.metadata.create_all(engine)
-    print("Tables created: banks, reviews.")
+    print("Tables created/verified: banks, reviews.")
 
-# Sample insert for banks (run once)
+# Seed banks (run once)
 
 
 def seed_banks():
@@ -62,7 +60,7 @@ def seed_banks():
             session.add(bank)
     session.commit()
     session.close()
-    print("Banks seeded.")
+    print("Banks seeded (3 total).")
 
 
 if __name__ == "__main__":

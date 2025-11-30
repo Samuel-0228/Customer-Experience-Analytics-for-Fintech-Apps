@@ -1,55 +1,71 @@
 import pandas as pd
 from sqlalchemy.orm import Session
-from database_setup import engine, Session as DBSession, Review, Bank  # From above
+from database_setup import engine, Session as DBSession, Review, Bank  # Import from setup
 from datetime import datetime
+import pandas as pd  # Already imported, but ensure
 
 
 def insert_reviews():
     session = DBSession()
 
-    # Load processed data (Task 2 output; adjust path)
+    # Load full processed data (MODIFY: Update CSV path if needed)
     csv_path = 'data/processed/reviews_with_sentiment_themes.csv'
     df = pd.read_csv(csv_path)
-    print(f"Inserting {len(df)} reviews...")
+    print(f"Inserting {len(df)} analyzed reviews...")
 
     inserted = 0
+    skipped = 0
     for _, row in df.iterrows():
-        # Map to model
         bank = session.query(Bank).filter_by(bank_name=row['bank']).first()
         if not bank:
-            print(f"Skipping review for unknown bank: {row['bank']}")
+            skipped += 1
             continue
+
+        # Handle NaNs
+        sentiment_score = float(row.get('sentiment_compound', 0)) if pd.notna(
+            row.get('sentiment_compound')) else None
+        theme = str(row.get('theme', 'Other'))
 
         review = Review(
             bank_id=bank.bank_id,
-            review_text=str(row['review']),
+            review_text=str(row['review']) if pd.notna(row['review']) else '',
             rating=float(row['rating']),
-            review_date=datetime.strptime(row['date'], '%Y-%m-%d').date(),
+            review_date=datetime.strptime(str(row['date']), '%Y-%m-%d').date(),
             sentiment_label=str(row['sentiment_label']),
-            sentiment_score=float(
-                row['sentiment_compound']) if 'sentiment_compound' in row else None,
-            source=str(row['source'])
+            sentiment_score=sentiment_score,
+            source=str(row['source']),
+            theme=theme
         )
         session.add(review)
         inserted += 1
 
     session.commit()
     session.close()
-    print(f"Inserted {inserted} reviews successfully.")
-
-# Verify integrity
+    print(f"Inserted {inserted} reviews ({skipped} skipped).")
 
 
 def verify_data():
     with engine.connect() as conn:
-        result = conn.execute("SELECT COUNT(*) FROM reviews GROUP BY bank_id;")
-        print("Reviews per bank:", result.fetchall())
+        # Counts per bank
+        counts = conn.execute("""
+            SELECT b.bank_name, COUNT(r.review_id) as count 
+            FROM banks b LEFT JOIN reviews r ON b.bank_id = r.bank_id 
+            GROUP BY b.bank_name;
+        """).fetchall()
+        print("Reviews per bank:")
+        for name, cnt in counts:
+            print(f"  {name}: {cnt}")
 
+        # Aggregates
         avg_rating = conn.execute("SELECT AVG(rating) FROM reviews;").scalar()
-        print(f"Avg rating in DB: {avg_rating:.2f}")
+        total = conn.execute("SELECT COUNT(*) FROM reviews;").scalar()
+        print(f"Total reviews: {total}")
+        print(f"Avg rating: {avg_rating:.2f}")
 
-        review_count = conn.execute("SELECT COUNT(*) FROM reviews;").scalar()
-        print(f"Total reviews in DB: {review_count}")
+        # Sample
+        sample = conn.execute(
+            "SELECT sentiment_label, theme FROM reviews LIMIT 5;").fetchall()
+        print("Sample sentiment/theme:", sample)
 
 
 if __name__ == "__main__":
