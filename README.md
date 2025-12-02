@@ -8,7 +8,7 @@ Data engineering project: Scraping, analyzing, and visualizing Google Play Store
 - **Tasks:** Scraping → Analysis → DB → Insights/Visuals.
 
 ## Setup
-1. Clone repo: `git clone https://github.com/Samuel-0228/Customer-Experience-Analytics-for-Fintech-Apps.git`
+1. Clone repo: `git clone https://github.com/Samuel-0228/Customer-Experience-Analytics-for-Fintech-Apps`
 2. Install deps: `pip install -r requirements.txt`
 3. (Later) Set up Postgres: See Task 3.
 
